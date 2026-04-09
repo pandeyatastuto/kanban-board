@@ -1,0 +1,179 @@
+/* ── Sprint header ─────────────────────────────────── */
+.sprint-header {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-6);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.sprint-header__name {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.sprint-header__goal {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.sprint-header__stats {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.sprint-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.sprint-stat__value {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+}
+
+.sprint-stat__label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Progress bar for sprint */
+.sprint-progress {
+  width: 100%;
+  margin-top: var(--space-3);
+}
+
+.sprint-progress__bar {
+  height: 6px;
+  background: var(--border-default);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.sprint-progress__fill {
+  height: 100%;
+  background: var(--color-success);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+.sprint-progress__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+/* ── Backlog view ──────────────────────────────────── */
+.backlog-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.backlog-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+
+.backlog-item:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--border-strong);
+}
+
+.backlog-item--in-sprint {
+  opacity: 0.6;
+}
+
+.backlog-item__title {
+  flex: 1;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+
+.backlog-item__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ── Burndown chart ────────────────────────────────── */
+.burndown-chart {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.burndown-chart__title {
+  font-size: var(--text-md);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+}
+
+.burndown-chart__svg {
+  width: 100%;
+  overflow: visible;
+}
+
+.burndown-chart__grid-line {
+  stroke: var(--border-default);
+  stroke-dasharray: 4 4;
+}
+
+.burndown-chart__ideal {
+  stroke: var(--text-muted);
+  stroke-dasharray: 6 4;
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.burndown-chart__actual {
+  stroke: var(--primary);
+  fill: none;
+  stroke-width: 2;
+}
+
+.burndown-chart__dot {
+  fill: var(--primary);
+}
+
+.burndown-chart__legend {
+  display: flex;
+  gap: var(--space-5);
+  margin-top: var(--space-3);
+  justify-content: center;
+}
+
+.burndown-chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.burndown-chart__legend-line {
+  width: 20px;
+  height: 2px;
+  border-radius: 1px;
+}

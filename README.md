@@ -1,70 +1,119 @@
-# Getting Started with Create React App
+# ProjectFlow — Kanban Board
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Swiggy SDE-1 frontend take-home. A Jira-like board with drag-and-drop, real-time collaboration simulation, sprints, and a backlog.
 
-## Available Scripts
+## Setup
 
-In the project directory, you can run:
+```bash
+npm install
+npm start        # http://localhost:3000
+npm run build
+```
 
-### `npm start`
+No env vars needed. Everything is mocked in `src/api/`.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+// Context tree
 
-### `npm test`
+```
+ThemeProvider        — color tokens, light/dark
+  ToastProvider      — notification queue
+    AuthProvider     — current user, presence
+      FilterProvider — search + filter state (synced to URL)
+        BoardProvider  — columns, issues, optimistic mutations
+          SprintProvider — active sprint, backlog
+            AppRoot  — BrowserRouter, routes, WebSocket
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+// Data flow
 
-### `npm run build`
+```
+tokens.json       →  ThemeContext  →  CSS custom properties on <html>
+mockData.ts       →  localStorage  →  *Api.ts (~300ms latency, 5% random fail)
+*Api.ts           →  context actions  →  reducer  →  UI
+mockWebSocket.ts  →  BoardContext  →  toast + reducer
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+// Heavy components are lazy-loaded via Suspense — IssueDetail, BurndownChart, BacklogView, SprintCompletionModal — so they're excluded from the initial bundle.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+// Board (/board)
 
-### `npm run eject`
+Four columns: To Do, In Progress, In Review, Done. Drag cards between columns or reorder within a column. Click + on a column to create an issue pre-filled with that status.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+WIP limit: each column has a progress bar. Dragging into a full column shows a confirm dialog before proceeding (Scenario 2 coverage). Bar goes orange at 80%, red at 100%.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Swimlane grouping: Header → Group dropdown → group by Assignee, Priority, or Epic.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+// Issue detail panel
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Slides in from the right. Everything is inline-editable — click a field, edit, blur/Enter to save. Comments support Ctrl+Enter to submit and @mention autocomplete. All changes are logged in the activity timeline below the comments.
 
-## Learn More
+// Search + filters
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Search bar does typeahead across titles and descriptions. Filter chips (Status, Priority, Type, Assignee) are combinable. All active filters are reflected in the URL so you can share a filtered board as a link. Navigating to a different route clears the filters.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+// Sprint (/sprint)
 
-### Code Splitting
+Burndown chart drawn with plain SVG — no charting library. "Complete Sprint" opens a modal to select which issues carry over to the next sprint.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+// Backlog (/backlog)
 
-### Analyzing the Bundle Size
+All issues without a sprint. Sortable by priority, title, or points. "→ Sprint" button moves an issue into the active sprint.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+---
 
-### Making a Progressive Web App
+// Design tokens
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Colors live in `src/tokens.json`, split by theme. ThemeContext writes each one as a CSS custom property on `<html>`. Components use `var(--token)`. Theme switching is a single `setProperty` loop — no flash, no reload.
 
-### Advanced Configuration
+Light mode is Jira-inspired (white surfaces, `#0065FF` blue).
+Dark mode is high-contrast (near-black surfaces, `#58A6FF` sky blue).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+---
 
-### Deployment
+// API layer
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+All API functions in `src/api/` read/write localStorage so the board survives a refresh. They return `Promise<T>` with ~300ms simulated latency and randomly fail ~5% of the time to exercise optimistic rollback.
 
-### `npm run build` fails to minify
+> **Note: You may occasionally see a "failed" toast when moving cards or saving changes — this is intentional.** Write operations (move, create, update, delete) are set to randomly fail ~5% of the time to demonstrate the optimistic rollback system. When a failure occurs, the UI automatically reverts to its previous state. Read operations (loading the board) never fail.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+To swap in a real backend: replace the function bodies in `src/api/*.ts`. The contexts and components don't need to change.
+
+// Mock WebSocket
+
+A singleton in `src/api/mockWebSocket.ts` fires two timer-based events on connect:
+
+- 3s: `user_joined` — Alex Johnson appears in presence indicators
+- 15s: `issue_moved` — PROJ-105 moves to In Review, triggering a toast
+
+That's why you see the "Alex moved..." toast after 15 seconds — it's intentional to demo real-time collaboration. To wire a real WebSocket, replace `connect()` with `new WebSocket(url)` and forward `onmessage` to `emit()`.
+
+---
+
+// Scenario coverage
+
+Scenario 1 (concurrent updates): BoardContext subscribes to the WebSocket. Incoming `issue_moved` events patch column state without a reload and fire a toast naming the mover.
+
+Scenario 2 (WIP limit drag): In `KanbanBoard.handleDragEnd`, dragging to a column at its limit shows a `window.confirm`. If dismissed, the drag is cancelled. If confirmed, the move goes through with a warning toast.
+
+Scenario 3 (offline resilience): CommentSection adds an optimistic comment with `is_pending: true` immediately. If the API call fails, the comment is removed and an error toast fires.
+
+---
+
+// Why Context + useReducer and not Redux/Zustand
+
+Redux/Zustand is overkill for this scope and adds a dependency. Plain `useState` gives no audit trail and makes rollback awkward. useReducer per domain gives a predictable state machine, easy snapshot-based rollback, and zero extra dependencies. Each context is independently testable.
+
+---
+
+// What I'd add with more time
+
+- Real WebSocket server (Socket.io) instead of the mock
+- Drag issues from backlog directly into a sprint column on the board
+- Label manager with a color picker
+- Keyboard navigation on the board (arrow keys between cards)
+- Unit tests for all reducers and hooks
+- Virtualized column lists for boards with 100+ issues
